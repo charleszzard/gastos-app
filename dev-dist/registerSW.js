@@ -1,0 +1,1 @@
+if('serviceWorker' in navigator) navigator.serviceWorker.register('/gastos-app/dev-sw.js?dev-sw', { scope: '/gastos-app/', type: 'classic' })

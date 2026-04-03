@@ -1,16 +1,114 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;600&display=swap');
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
+/* ── Dracula CSS variables ── */
+:root {
+  --drac-bg:       #282a36;
+  --drac-bg-alt:   #21222c;
+  --drac-surface:  #44475a;
+  --drac-surface2: #373948;
+  --drac-comment:  #6272a4;
+  --drac-fg:       #f8f8f2;
+  --drac-purple:   #bd93f9;
+  --drac-pink:     #ff79c6;
+  --drac-cyan:     #8be9fd;
+  --drac-green:    #50fa7b;
+  --drac-red:      #ff5555;
+  --drac-orange:   #ffb86c;
+  --drac-yellow:   #f1fa8c;
+}
+
 @layer base {
-  html { -webkit-tap-highlight-color: transparent; }
-  body { @apply font-sans antialiased; }
+  html {
+    -webkit-tap-highlight-color: transparent;
+    background-color: var(--drac-bg);
+    color: var(--drac-fg);
+  }
+  body {
+    @apply font-sans antialiased;
+    background-color: var(--drac-bg);
+    color: var(--drac-fg);
+    min-height: 100vh;
+  }
   * { @apply select-none; }
   input, textarea { @apply select-text; }
+
+  /* Dracula-styled scrollbar */
+  ::-webkit-scrollbar { width: 6px; height: 6px; }
+  ::-webkit-scrollbar-track { background: var(--drac-bg); }
+  ::-webkit-scrollbar-thumb { background: var(--drac-surface); border-radius: 3px; }
+  ::-webkit-scrollbar-thumb:hover { background: var(--drac-comment); }
 }
 
 @layer utilities {
   .scrollbar-hide { -ms-overflow-style: none; scrollbar-width: none; }
   .scrollbar-hide::-webkit-scrollbar { display: none; }
   .safe-bottom { padding-bottom: env(safe-area-inset-bottom, 16px); }
+
+  /* Dracula glass cards */
+  .drac-card {
+    background: var(--drac-surface2);
+    border: 1px solid rgba(98, 114, 164, 0.3);
+    border-radius: 16px;
+  }
+  .drac-card-elevated {
+    background: var(--drac-surface);
+    border: 1px solid rgba(189, 147, 249, 0.15);
+    border-radius: 16px;
+    box-shadow: 0 4px 24px rgba(0,0,0,0.4);
+  }
+
+  /* Neon glow text */
+  .glow-purple { text-shadow: 0 0 12px rgba(189,147,249,0.6); }
+  .glow-green  { text-shadow: 0 0 12px rgba(80,250,123,0.6); }
+  .glow-pink   { text-shadow: 0 0 12px rgba(255,121,198,0.6); }
+  .glow-cyan   { text-shadow: 0 0 12px rgba(139,233,253,0.6); }
+  .glow-red    { text-shadow: 0 0 12px rgba(255,85,85,0.6); }
+
+  /* Input Dracula style */
+  .drac-input {
+    background: rgba(40, 42, 54, 0.8);
+    border: 1px solid rgba(98, 114, 164, 0.4);
+    color: var(--drac-fg);
+    border-radius: 12px;
+    padding: 12px 16px;
+    font-size: 0.875rem;
+    transition: all 0.2s;
+    width: 100%;
+  }
+  .drac-input:focus {
+    outline: none;
+    border-color: var(--drac-purple);
+    box-shadow: 0 0 0 3px rgba(189,147,249,0.15);
+  }
+  .drac-input::placeholder { color: var(--drac-comment); }
+
+  /* Dracula button primary */
+  .drac-btn-primary {
+    background: linear-gradient(135deg, var(--drac-purple), #9d77f5);
+    color: var(--drac-bg);
+    font-weight: 700;
+    border-radius: 14px;
+    padding: 14px;
+    width: 100%;
+    transition: all 0.15s;
+    box-shadow: 0 4px 16px rgba(189,147,249,0.35);
+  }
+  .drac-btn-primary:active { transform: scale(0.97); }
+
+  /* Subtle animations */
+  @keyframes drac-pulse {
+    0%, 100% { opacity: 1; }
+    50%       { opacity: 0.7; }
+  }
+  .drac-pulse { animation: drac-pulse 2s ease-in-out infinite; }
+
+  @keyframes slideUp {
+    from { transform: translateY(20px); opacity: 0; }
+    to   { transform: translateY(0);    opacity: 1; }
+  }
+  .slide-up { animation: slideUp 0.3s ease-out; }
 }

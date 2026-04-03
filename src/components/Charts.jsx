@@ -1,10 +1,30 @@
 import React, { useMemo, useState } from 'react'
 import {
   LineChart, Line, BarChart, Bar, XAxis, YAxis, CartesianGrid,
-  Tooltip, ResponsiveContainer, Cell, PieChart, Pie, Legend
+  Tooltip, ResponsiveContainer, Cell, PieChart, Pie
 } from 'recharts'
 import { useApp } from '../context/AppContext'
 import { CATEGORIES, MONTHS } from '../constants'
+
+const D = {
+  bg: '#282a36', surface: '#44475a', surface2: '#373948',
+  comment: '#6272a4', fg: '#f8f8f2',
+  purple: '#bd93f9', pink: '#ff79c6', cyan: '#8be9fd',
+  green: '#50fa7b', red: '#ff5555', orange: '#ffb86c', yellow: '#f1fa8c',
+}
+
+const TOOLTIP_STYLE = {
+  backgroundColor: '#44475a',
+  border: '1px solid rgba(98,114,164,0.4)',
+  borderRadius: 12,
+  fontSize: 12,
+  color: D.fg,
+}
+const CARD = {
+  background: D.surface2,
+  border: '1px solid rgba(98,114,164,0.2)',
+  borderRadius: 18,
+}
 
 function fmt(n) {
   return n.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })
@@ -20,11 +40,13 @@ function ChipFilter({ options, value, onChange }) {
         <button
           key={o.value}
           onClick={() => onChange(o.value)}
-          className={`flex-shrink-0 text-xs px-3 py-1.5 rounded-full font-medium transition-colors ${
-            value === o.value
-              ? 'bg-brand-600 text-white'
-              : 'bg-white dark:bg-gray-900 text-gray-500 dark:text-gray-400 border border-gray-200 dark:border-gray-700'
-          }`}
+          className="flex-shrink-0 text-xs px-3 py-1.5 rounded-full font-semibold transition-all"
+          style={{
+            background: value === o.value ? D.purple : 'rgba(68,71,90,0.5)',
+            color: value === o.value ? D.bg : D.comment,
+            border: value === o.value ? `1px solid ${D.purple}` : '1px solid rgba(98,114,164,0.25)',
+            boxShadow: value === o.value ? `0 0 10px rgba(189,147,249,0.3)` : 'none',
+          }}
         >
           {o.label}
         </button>
@@ -35,12 +57,11 @@ function ChipFilter({ options, value, onChange }) {
 
 export default function Charts({ month, year }) {
   const { data } = useApp()
-  const [view, setView] = useState('year')  // year | daily | compare
+  const [view, setView] = useState('year')
 
-  /* ── 12-month bar chart ── */
   const yearData = useMemo(() => {
     return MONTHS.map((name, m) => {
-      const rows = data.expenses.filter(e => {
+      const rows    = data.expenses.filter(e => {
         const d = new Date(e.date + 'T00:00:00')
         return d.getFullYear() === year && d.getMonth() === m
       })
@@ -50,10 +71,9 @@ export default function Charts({ month, year }) {
     })
   }, [data.expenses, year])
 
-  /* ── daily spending current month ── */
   const dailyData = useMemo(() => {
     const days = new Date(year, month + 1, 0).getDate()
-    const arr = Array.from({ length: days }, (_, i) => ({ day: i + 1, total: 0, cum: 0 }))
+    const arr  = Array.from({ length: days }, (_, i) => ({ day: i + 1, total: 0, cum: 0 }))
     data.expenses.filter(e => {
       const d = new Date(e.date + 'T00:00:00')
       return d.getMonth() === month && d.getFullYear() === year && e.type === 'expense'
@@ -66,7 +86,6 @@ export default function Charts({ month, year }) {
     return arr
   }, [data.expenses, month, year])
 
-  /* ── year vs last year ── */
   const compareData = useMemo(() => {
     return MONTHS.map((name, m) => {
       const get = (y) => data.expenses.filter(e => {
@@ -77,7 +96,6 @@ export default function Charts({ month, year }) {
     })
   }, [data.expenses, year])
 
-  /* ── category donut ── */
   const catData = useMemo(() => {
     const map = {}
     data.expenses.filter(e => {
@@ -89,33 +107,36 @@ export default function Charts({ month, year }) {
       .sort((a, b) => b.value - a.value)
   }, [data.expenses, month, year])
 
-  const totalExp  = yearData.reduce((s, d) => s + d.expense, 0)
-  const totalInc  = yearData.reduce((s, d) => s + d.income, 0)
-  const bestMonth = [...yearData].sort((a, b) => a.expense - b.expense)[0]
-  const worstMonth= [...yearData].sort((a, b) => b.expense - a.expense)[0]
+  const totalExp   = yearData.reduce((s, d) => s + d.expense, 0)
+  const totalInc   = yearData.reduce((s, d) => s + d.income, 0)
+  const bestMonth  = [...yearData].sort((a, b) => a.expense - b.expense)[0]
+  const worstMonth = [...yearData].sort((a, b) => b.expense - a.expense)[0]
 
-  const TOOLTIP_STYLE = {
-    backgroundColor: 'var(--tw-bg, #fff)',
-    border: '0.5px solid #e5e7eb',
-    borderRadius: 12,
-    fontSize: 12,
-  }
+  const kpis = [
+    { label: `Total gasto ${year}`,    value: fmt(totalExp),       color: D.red },
+    { label: `Total recebido ${year}`, value: fmt(totalInc),       color: D.green },
+    { label: 'Mês mais econômico',     value: bestMonth.name,      color: D.cyan, sub: fmt(bestMonth.expense) },
+    { label: 'Mês com mais gastos',    value: worstMonth.name,     color: D.orange, sub: fmt(worstMonth.expense) },
+  ]
+
+  const tickStyle = { fontSize: 10, fill: D.comment }
+  const grid = <CartesianGrid strokeDasharray="3 3" stroke="rgba(98,114,164,0.1)" vertical={false} />
 
   return (
-    <div className="px-4 py-4 space-y-5">
+    <div className="px-4 py-4 space-y-5 slide-up">
 
       {/* KPI row */}
       <div className="grid grid-cols-2 gap-3">
-        {[
-          { label: `Total gasto ${year}`,    value: fmt(totalExp), color: 'text-red-500' },
-          { label: `Total recebido ${year}`, value: fmt(totalInc), color: 'text-brand-600 dark:text-brand-400' },
-          { label: 'Mês mais econômico',     value: bestMonth.name,  color: 'text-gray-800 dark:text-gray-100', sub: fmt(bestMonth.expense) },
-          { label: 'Mês com mais gastos',    value: worstMonth.name, color: 'text-gray-800 dark:text-gray-100', sub: fmt(worstMonth.expense) },
-        ].map(k => (
-          <div key={k.label} className="bg-white dark:bg-gray-900 rounded-2xl p-3.5 border border-gray-100 dark:border-gray-800">
-            <p className="text-[11px] text-gray-400 dark:text-gray-500 mb-1 leading-tight">{k.label}</p>
-            <p className={`text-base font-semibold ${k.color}`}>{k.value}</p>
-            {k.sub && <p className="text-[11px] text-gray-400 mt-0.5">{k.sub}</p>}
+        {kpis.map(k => (
+          <div key={k.label} className="p-3.5 rounded-2xl" style={CARD}>
+            <p className="text-[11px] mb-1 leading-tight" style={{ color: D.comment }}>{k.label}</p>
+            <p
+              className="text-base font-bold"
+              style={{ color: k.color, textShadow: `0 0 12px ${k.color}60`, fontFamily: "'JetBrains Mono', monospace" }}
+            >
+              {k.value}
+            </p>
+            {k.sub && <p className="text-[11px] mt-0.5" style={{ color: D.comment }}>{k.sub}</p>}
           </div>
         ))}
       </div>
@@ -126,84 +147,83 @@ export default function Charts({ month, year }) {
         onChange={setView}
         options={[
           { value: 'year',    label: `Ano ${year}` },
-          { value: 'daily',   label: 'Diário (mês atual)' },
-          { value: 'compare', label: 'Comparar anos' },
+          { value: 'daily',   label: 'Diário' },
+          { value: 'compare', label: 'Comparar' },
           { value: 'cats',    label: 'Categorias' },
         ]}
       />
 
-      {/* ── Year overview ── */}
+      {/* Year overview */}
       {view === 'year' && (
-        <div className="bg-white dark:bg-gray-900 rounded-2xl p-4 border border-gray-100 dark:border-gray-800 space-y-4">
-          <p className="text-sm font-medium text-gray-700 dark:text-gray-200">Receitas vs. Gastos por mês</p>
+        <div className="p-4 rounded-2xl space-y-4" style={CARD}>
+          <p className="text-sm font-semibold" style={{ color: D.fg }}>Receitas vs. Gastos por mês</p>
           <ResponsiveContainer width="100%" height={200}>
             <BarChart data={yearData} margin={{ top: 4, right: 4, left: -18, bottom: 0 }}>
-              <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" vertical={false} />
-              <XAxis dataKey="name" tick={{ fontSize: 10, fill: '#9ca3af' }} />
-              <YAxis tick={{ fontSize: 10, fill: '#9ca3af' }} tickFormatter={fmtK} />
-              <Tooltip formatter={v => fmt(v)} contentStyle={TOOLTIP_STYLE} />
-              <Bar dataKey="income"  name="Receitas" fill="#1d9e75" radius={[3,3,0,0]} maxBarSize={18} />
-              <Bar dataKey="expense" name="Gastos"   fill="#e24b4a" radius={[3,3,0,0]} maxBarSize={18} />
+              {grid}
+              <XAxis dataKey="name" tick={tickStyle} />
+              <YAxis tick={tickStyle} tickFormatter={fmtK} />
+              <Tooltip formatter={v => fmt(v)} contentStyle={TOOLTIP_STYLE} cursor={{ fill: 'rgba(189,147,249,0.06)' }} />
+              <Bar dataKey="income"  name="Receitas" fill={D.green}  radius={[3,3,0,0]} maxBarSize={18} />
+              <Bar dataKey="expense" name="Gastos"   fill={D.red}    radius={[3,3,0,0]} maxBarSize={18} />
             </BarChart>
           </ResponsiveContainer>
 
-          <p className="text-sm font-medium text-gray-700 dark:text-gray-200">Saldo acumulado</p>
+          <p className="text-sm font-semibold" style={{ color: D.fg }}>Saldo acumulado</p>
           <ResponsiveContainer width="100%" height={130}>
             <LineChart data={yearData} margin={{ top: 4, right: 4, left: -18, bottom: 0 }}>
-              <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" vertical={false} />
-              <XAxis dataKey="name" tick={{ fontSize: 10, fill: '#9ca3af' }} />
-              <YAxis tick={{ fontSize: 10, fill: '#9ca3af' }} tickFormatter={fmtK} />
+              {grid}
+              <XAxis dataKey="name" tick={tickStyle} />
+              <YAxis tick={tickStyle} tickFormatter={fmtK} />
               <Tooltip formatter={v => fmt(v)} contentStyle={TOOLTIP_STYLE} />
-              <Line
-                type="monotone" dataKey="balance" name="Saldo"
-                stroke="#7f77dd" strokeWidth={2} dot={{ r: 3, fill: '#7f77dd' }}
+              <Line type="monotone" dataKey="balance" name="Saldo"
+                stroke={D.purple} strokeWidth={2.5} dot={{ r: 3, fill: D.purple }}
+                activeDot={{ r: 5, fill: D.purple, boxShadow: `0 0 8px ${D.purple}` }}
               />
             </LineChart>
           </ResponsiveContainer>
         </div>
       )}
 
-      {/* ── Daily ── */}
+      {/* Daily */}
       {view === 'daily' && (
-        <div className="bg-white dark:bg-gray-900 rounded-2xl p-4 border border-gray-100 dark:border-gray-800 space-y-4">
-          <p className="text-sm font-medium text-gray-700 dark:text-gray-200">
+        <div className="p-4 rounded-2xl space-y-4" style={CARD}>
+          <p className="text-sm font-semibold" style={{ color: D.fg }}>
             Gastos diários — {MONTHS[month]}
           </p>
           <ResponsiveContainer width="100%" height={160}>
             <BarChart data={dailyData} margin={{ top: 4, right: 4, left: -18, bottom: 0 }}>
-              <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" vertical={false} />
-              <XAxis dataKey="day" tick={{ fontSize: 9, fill: '#9ca3af' }} interval={4} />
-              <YAxis tick={{ fontSize: 9, fill: '#9ca3af' }} tickFormatter={fmtK} />
-              <Tooltip formatter={v => fmt(v)} labelFormatter={d => `Dia ${d}`} contentStyle={TOOLTIP_STYLE} />
-              <Bar dataKey="total" name="Gasto" fill="#378add" radius={[3,3,0,0]} />
+              {grid}
+              <XAxis dataKey="day" tick={{ ...tickStyle, fontSize: 9 }} interval={4} />
+              <YAxis tick={{ ...tickStyle, fontSize: 9 }} tickFormatter={fmtK} />
+              <Tooltip formatter={v => fmt(v)} labelFormatter={d => `Dia ${d}`} contentStyle={TOOLTIP_STYLE} cursor={{ fill: 'rgba(189,147,249,0.06)' }} />
+              <Bar dataKey="total" name="Gasto" fill={D.cyan} radius={[3,3,0,0]} />
             </BarChart>
           </ResponsiveContainer>
 
-          <p className="text-sm font-medium text-gray-700 dark:text-gray-200">Acumulado no mês</p>
+          <p className="text-sm font-semibold" style={{ color: D.fg }}>Acumulado no mês</p>
           <ResponsiveContainer width="100%" height={130}>
             <LineChart data={dailyData} margin={{ top: 4, right: 4, left: -18, bottom: 0 }}>
-              <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" vertical={false} />
-              <XAxis dataKey="day" tick={{ fontSize: 9, fill: '#9ca3af' }} interval={4} />
-              <YAxis tick={{ fontSize: 9, fill: '#9ca3af' }} tickFormatter={fmtK} />
+              {grid}
+              <XAxis dataKey="day" tick={{ ...tickStyle, fontSize: 9 }} interval={4} />
+              <YAxis tick={{ ...tickStyle, fontSize: 9 }} tickFormatter={fmtK} />
               <Tooltip formatter={v => fmt(v)} labelFormatter={d => `Dia ${d}`} contentStyle={TOOLTIP_STYLE} />
-              <Line
-                type="monotone" dataKey="cum" name="Acumulado"
-                stroke="#ef9f27" strokeWidth={2} dot={false}
+              <Line type="monotone" dataKey="cum" name="Acumulado"
+                stroke={D.orange} strokeWidth={2.5} dot={false}
               />
             </LineChart>
           </ResponsiveContainer>
         </div>
       )}
 
-      {/* ── Compare years ── */}
+      {/* Compare years */}
       {view === 'compare' && (
-        <div className="bg-white dark:bg-gray-900 rounded-2xl p-4 border border-gray-100 dark:border-gray-800">
-          <p className="text-sm font-medium text-gray-700 dark:text-gray-200 mb-3">
+        <div className="p-4 rounded-2xl" style={CARD}>
+          <p className="text-sm font-semibold mb-3" style={{ color: D.fg }}>
             {year - 1} vs {year} — Gastos mensais
           </p>
           <div className="flex gap-4 mb-3">
-            {[[year - 1, '#9ca3af'], [year, '#1d9e75']].map(([y, color]) => (
-              <span key={y} className="flex items-center gap-1.5 text-xs text-gray-500 dark:text-gray-400">
+            {[[year - 1, D.comment], [year, D.purple]].map(([y, color]) => (
+              <span key={y} className="flex items-center gap-1.5 text-xs" style={{ color: D.comment }}>
                 <span className="w-3 h-3 rounded-sm" style={{ background: color }} />
                 {y}
               </span>
@@ -211,25 +231,25 @@ export default function Charts({ month, year }) {
           </div>
           <ResponsiveContainer width="100%" height={200}>
             <BarChart data={compareData} margin={{ top: 4, right: 4, left: -18, bottom: 0 }}>
-              <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" vertical={false} />
-              <XAxis dataKey="name" tick={{ fontSize: 10, fill: '#9ca3af' }} />
-              <YAxis tick={{ fontSize: 10, fill: '#9ca3af' }} tickFormatter={fmtK} />
-              <Tooltip formatter={v => fmt(v)} contentStyle={TOOLTIP_STYLE} />
-              <Bar dataKey={String(year - 1)} name={String(year - 1)} fill="#9ca3af" radius={[3,3,0,0]} maxBarSize={14} />
-              <Bar dataKey={String(year)}     name={String(year)}     fill="#1d9e75" radius={[3,3,0,0]} maxBarSize={14} />
+              {grid}
+              <XAxis dataKey="name" tick={tickStyle} />
+              <YAxis tick={tickStyle} tickFormatter={fmtK} />
+              <Tooltip formatter={v => fmt(v)} contentStyle={TOOLTIP_STYLE} cursor={{ fill: 'rgba(189,147,249,0.06)' }} />
+              <Bar dataKey={String(year - 1)} name={String(year - 1)} fill={D.comment} radius={[3,3,0,0]} maxBarSize={14} />
+              <Bar dataKey={String(year)}     name={String(year)}     fill={D.purple}  radius={[3,3,0,0]} maxBarSize={14} />
             </BarChart>
           </ResponsiveContainer>
         </div>
       )}
 
-      {/* ── Category donut ── */}
+      {/* Category donut */}
       {view === 'cats' && (
-        <div className="bg-white dark:bg-gray-900 rounded-2xl p-4 border border-gray-100 dark:border-gray-800">
-          <p className="text-sm font-medium text-gray-700 dark:text-gray-200 mb-3">
+        <div className="p-4 rounded-2xl" style={CARD}>
+          <p className="text-sm font-semibold mb-3" style={{ color: D.fg }}>
             Categorias — {MONTHS[month]}
           </p>
           {catData.length === 0 ? (
-            <p className="text-sm text-gray-400 text-center py-8">Sem gastos este mês</p>
+            <p className="text-sm text-center py-8" style={{ color: D.comment }}>Sem gastos este mês</p>
           ) : (
             <>
               <ResponsiveContainer width="100%" height={200}>
@@ -243,13 +263,13 @@ export default function Charts({ month, year }) {
               <div className="mt-3 space-y-2">
                 {catData.map((c, i) => {
                   const total = catData.reduce((s, x) => s + x.value, 0)
-                  const pct = Math.round((c.value / total) * 100)
+                  const pct   = Math.round((c.value / total) * 100)
                   return (
                     <div key={i} className="flex items-center gap-2">
-                      <div className="w-2.5 h-2.5 rounded-full flex-shrink-0" style={{ background: c.color }} />
-                      <span className="text-xs text-gray-500 dark:text-gray-400 flex-1">{c.icon} {c.name}</span>
-                      <span className="text-xs text-gray-400">{pct}%</span>
-                      <span className="text-xs font-medium text-gray-700 dark:text-gray-200">{fmt(c.value)}</span>
+                      <div className="w-2.5 h-2.5 rounded-full flex-shrink-0" style={{ background: c.color, boxShadow: `0 0 6px ${c.color}80` }} />
+                      <span className="text-xs flex-1" style={{ color: D.comment }}>{c.icon} {c.name}</span>
+                      <span className="text-xs" style={{ color: D.comment }}>{pct}%</span>
+                      <span className="text-xs font-semibold" style={{ color: D.fg, fontFamily: "'JetBrains Mono', monospace" }}>{fmt(c.value)}</span>
                     </div>
                   )
                 })}

@@ -1,6 +1,6 @@
 const KEY = 'gastos_v2'
 
-const defaults = () => ({ expenses: [], budgets: {} })
+const defaults = () => ({ expenses: [], budgets: {}, bills: [], savingsGoal: 0 })
 
 export function load() {
   try {
@@ -20,11 +20,11 @@ export function save(data) {
 }
 
 export function exportCSV(expenses) {
-  const header = 'Data,Descrição,Categoria,Tipo,Valor'
+  const header = 'Data,Descrição,Categoria,Tipo,Valor,Nota'
   const rows = expenses.map(e => {
     const date = new Date(e.date + 'T00:00:00').toLocaleDateString('pt-BR')
     const amt = e.type === 'income' ? e.amount : -e.amount
-    return `"${date}","${e.desc}","${e.category}","${e.type === 'income' ? 'Receita' : 'Gasto'}","${amt.toFixed(2)}"`
+    return `"${date}","${e.desc}","${e.category}","${e.type === 'income' ? 'Receita' : 'Gasto'}","${amt.toFixed(2)}","${e.note || ''}"`
   })
   const csv = [header, ...rows].join('\n')
   const blob = new Blob(['\uFEFF' + csv], { type: 'text/csv;charset=utf-8;' })
