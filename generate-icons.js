@@ -14,7 +14,7 @@ function drawIcon(size) {
   const r = size * 0.18
 
   // Background
-  ctx.fillStyle = '#0f6e56'
+  ctx.fillStyle = '#7c3aed'
   roundRect(ctx, 0, 0, size, size, r)
   ctx.fill()
 
@@ -41,7 +41,7 @@ function drawMaskableIcon(size) {
   const ctx = canvas.getContext('2d')
 
   // Background completo (sem border-radius — maskable precisa preencher tudo)
-  ctx.fillStyle = '#0f6e56'
+  ctx.fillStyle = '#7c3aed'
   ctx.fillRect(0, 0, size, size)
 
   // Coin circle (dentro do safe zone de 80%)

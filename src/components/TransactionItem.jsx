@@ -28,7 +28,7 @@ export default function TransactionItem({ expense: e, onEdit }) {
   }
 
   return (
-    <div className="bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-800 rounded-2xl p-3 flex items-center gap-3">
+    <div className="bg-white border border-violet-100 rounded-2xl p-3 flex items-center gap-3 shadow-sm shadow-violet-50">
       <div className="w-10 h-10 rounded-xl flex items-center justify-center text-lg flex-shrink-0" style={{ background: cat.bg }}>
         {cat.icon}
       </div>
@@ -36,7 +36,7 @@ export default function TransactionItem({ expense: e, onEdit }) {
         <p className="text-sm font-medium text-gray-800 dark:text-gray-100 truncate">{e.desc}</p>
         <p className="text-xs text-gray-400 dark:text-gray-500">{cat.name} · {fmtDate(e.date)}</p>
       </div>
-      <p className={`text-sm font-semibold flex-shrink-0 ${isIncome ? 'text-brand-600 dark:text-brand-400' : 'text-red-500'}`}>
+      <p className={`text-sm font-bold flex-shrink-0 ${isIncome ? 'text-brand-600' : 'text-red-500'}`}>
         {isIncome ? '+' : '-'}{fmt(e.amount)}
       </p>
       <button onClick={() => onEdit(e)} className="text-gray-300 dark:text-gray-600 hover:text-brand-600 dark:hover:text-brand-400 text-base px-1 transition-colors">✏️</button>

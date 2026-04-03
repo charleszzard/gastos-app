@@ -8,12 +8,15 @@ function fmt(n) {
   return n.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })
 }
 
-function StatCard({ label, value, sub, color }) {
+function StatCard({ label, value, sub, color, icon }) {
   return (
-    <div className="bg-white dark:bg-gray-900 rounded-2xl p-4 border border-gray-100 dark:border-gray-800">
-      <p className="text-xs text-gray-400 dark:text-gray-500 mb-1">{label}</p>
-      <p className={`text-xl font-semibold ${color}`}>{value}</p>
-      {sub && <p className="text-xs text-gray-400 dark:text-gray-500 mt-0.5">{sub}</p>}
+    <div className="bg-white rounded-2xl p-4 border border-violet-100 shadow-sm shadow-violet-50 flex flex-col gap-1">
+      <div className="flex items-center gap-1.5 mb-0.5">
+        {icon && <span className="text-base leading-none">{icon}</span>}
+        <p className="text-xs text-gray-400 font-medium">{label}</p>
+      </div>
+      <p className={`text-xl font-bold ${color}`}>{value}</p>
+      {sub && <p className="text-xs text-gray-400">{sub}</p>}
     </div>
   )
 }
@@ -53,29 +56,47 @@ export default function Dashboard({ month, year, onEdit, onAdd, goToTransactions
   const daysInMonth = new Date(year, month + 1, 0).getDate()
   const avgDaily = expense / daysInMonth
   const largest  = filtered.filter(e => e.type === 'expense').sort((a, b) => b.amount - a.amount)[0]
+  const balancePositive = balance >= 0
 
   return (
-    <div className="px-4 py-4 space-y-5">
+    <div className="px-4 py-4 space-y-4">
       {/* Balance Hero */}
-      <div className="bg-brand-600 rounded-3xl p-5 text-white">
-        <p className="text-sm opacity-80 mb-1">Saldo do mês</p>
-        <p className="text-4xl font-semibold tracking-tight mb-4">{fmt(balance)}</p>
-        <div className="flex gap-4">
-          <div className="flex-1 bg-white/10 rounded-xl p-3">
-            <p className="text-xs opacity-70 mb-0.5">↑ Receitas</p>
-            <p className="text-base font-semibold">{fmt(income)}</p>
+      <div className="rounded-3xl p-5 text-white relative overflow-hidden" style={{ background: 'linear-gradient(135deg, #7c3aed 0%, #a855f7 60%, #c084fc 100%)' }}>
+        {/* decorative circle */}
+        <div className="absolute -top-8 -right-8 w-36 h-36 rounded-full bg-white/10 pointer-events-none" />
+        <div className="absolute -bottom-6 -left-6 w-24 h-24 rounded-full bg-white/10 pointer-events-none" />
+
+        <p className="text-xs font-medium opacity-75 mb-1 tracking-wide uppercase">Saldo do mês</p>
+        <p className={`text-4xl font-bold tracking-tight mb-4 ${balancePositive ? 'text-white' : 'text-red-200'}`}>
+          {fmt(balance)}
+        </p>
+        <div className="flex gap-3">
+          <div className="flex-1 bg-white/15 backdrop-blur-sm rounded-2xl p-3">
+            <p className="text-[11px] opacity-70 mb-0.5 flex items-center gap-1">
+              <span className="text-green-300">↑</span> Receitas
+            </p>
+            <p className="text-base font-bold">{fmt(income)}</p>
           </div>
-          <div className="flex-1 bg-white/10 rounded-xl p-3">
-            <p className="text-xs opacity-70 mb-0.5">↓ Gastos</p>
-            <p className="text-base font-semibold">{fmt(expense)}</p>
+          <div className="flex-1 bg-white/15 backdrop-blur-sm rounded-2xl p-3">
+            <p className="text-[11px] opacity-70 mb-0.5 flex items-center gap-1">
+              <span className="text-red-300">↓</span> Gastos
+            </p>
+            <p className="text-base font-bold">{fmt(expense)}</p>
           </div>
         </div>
       </div>
 
-      {/* Stats */}
+      {/* Stats row */}
       <div className="grid grid-cols-2 gap-3">
-        <StatCard label="Gasto médio/dia" value={fmt(avgDaily)} sub={`${filtered.length} lançamentos`} color="text-gray-800 dark:text-gray-100" />
         <StatCard
+          icon="📅"
+          label="Gasto médio/dia"
+          value={fmt(isNaN(avgDaily) ? 0 : avgDaily)}
+          sub={`${filtered.length} lançamento${filtered.length !== 1 ? 's' : ''}`}
+          color="text-violet-700"
+        />
+        <StatCard
+          icon="🔺"
           label="Maior gasto"
           value={largest ? fmt(largest.amount) : '—'}
           sub={largest ? largest.desc.slice(0, 18) : 'nenhum'}
@@ -85,25 +106,25 @@ export default function Dashboard({ month, year, onEdit, onAdd, goToTransactions
 
       {/* Donut chart */}
       {catTotals.length > 0 && (
-        <div className="bg-white dark:bg-gray-900 rounded-2xl p-4 border border-gray-100 dark:border-gray-800">
-          <p className="text-sm font-medium text-gray-700 dark:text-gray-200 mb-3">Por categoria</p>
-          <div className="flex items-center gap-3">
-            <div className="w-32 h-32 flex-shrink-0">
+        <div className="bg-white rounded-2xl p-4 border border-violet-100 shadow-sm shadow-violet-50">
+          <p className="text-sm font-semibold text-gray-700 mb-3">Por categoria</p>
+          <div className="flex items-center gap-4">
+            <div className="w-28 h-28 flex-shrink-0">
               <ResponsiveContainer width="100%" height="100%">
                 <PieChart>
-                  <Pie data={catTotals} dataKey="value" cx="50%" cy="50%" innerRadius={36} outerRadius={56} paddingAngle={2}>
+                  <Pie data={catTotals} dataKey="value" cx="50%" cy="50%" innerRadius={33} outerRadius={52} paddingAngle={3}>
                     {catTotals.map(c => <Cell key={c.id} fill={c.color} />)}
                   </Pie>
                   <Tooltip formatter={(v) => fmt(v)} />
                 </PieChart>
               </ResponsiveContainer>
             </div>
-            <div className="flex-1 space-y-1.5">
-              {catTotals.slice(0, 5).map(c => (
+            <div className="flex-1 space-y-2">
+              {catTotals.slice(0, 5).map((c, i) => (
                 <div key={c.id} className="flex items-center gap-2">
                   <div className="w-2 h-2 rounded-full flex-shrink-0" style={{ background: c.color }} />
-                  <span className="text-xs text-gray-500 dark:text-gray-400 flex-1">{c.name}</span>
-                  <span className="text-xs font-medium text-gray-700 dark:text-gray-300">{fmt(c.value)}</span>
+                  <span className="text-xs text-gray-500 flex-1">{c.name}</span>
+                  <span className="text-xs font-semibold text-gray-700">{fmt(c.value)}</span>
                 </div>
               ))}
             </div>
@@ -112,32 +133,38 @@ export default function Dashboard({ month, year, onEdit, onAdd, goToTransactions
       )}
 
       {/* Bar chart last 6 months */}
-      <div className="bg-white dark:bg-gray-900 rounded-2xl p-4 border border-gray-100 dark:border-gray-800">
-        <p className="text-sm font-medium text-gray-700 dark:text-gray-200 mb-3">Evolução (6 meses)</p>
-        <ResponsiveContainer width="100%" height={140}>
+      <div className="bg-white rounded-2xl p-4 border border-violet-100 shadow-sm shadow-violet-50">
+        <p className="text-sm font-semibold text-gray-700 mb-3">Evolução (6 meses)</p>
+        <ResponsiveContainer width="100%" height={130}>
           <BarChart data={last6months} margin={{ top: 4, right: 4, left: -20, bottom: 0 }}>
-            <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
+            <CartesianGrid strokeDasharray="3 3" stroke="#f3e8ff" />
             <XAxis dataKey="name" tick={{ fontSize: 11, fill: '#9ca3af' }} />
             <YAxis tick={{ fontSize: 10, fill: '#9ca3af' }} tickFormatter={v => `R$${(v/1000).toFixed(0)}k`} />
-            <Tooltip formatter={v => fmt(v)} />
-            <Bar dataKey="total" fill="#1d9e75" radius={[4, 4, 0, 0]} />
+            <Tooltip formatter={v => fmt(v)} cursor={{ fill: '#f3e8ff' }} />
+            <Bar dataKey="total" radius={[6, 6, 0, 0]}>
+              {last6months.map((_, i) => (
+                <Cell key={i} fill={i === last6months.length - 1 ? '#7c3aed' : '#c4b5fd'} />
+              ))}
+            </Bar>
           </BarChart>
         </ResponsiveContainer>
       </div>
 
       {/* Recent transactions */}
-      <div>
+      <div className="pb-2">
         <div className="flex items-center justify-between mb-3">
-          <p className="text-sm font-medium text-gray-700 dark:text-gray-200">Últimos lançamentos</p>
+          <p className="text-sm font-semibold text-gray-700">Últimos lançamentos</p>
           {filtered.length > 4 && (
-            <button onClick={goToTransactions} className="text-xs text-brand-600 dark:text-brand-400">Ver todos</button>
+            <button onClick={goToTransactions} className="text-xs text-brand-600 font-medium py-1 px-2 rounded-lg bg-brand-50">Ver todos</button>
           )}
         </div>
         {filtered.length === 0 ? (
-          <div className="text-center py-8 text-gray-400">
-            <p className="text-3xl mb-2">💸</p>
-            <p className="text-sm">Nenhum lançamento este mês.</p>
-            <button onClick={onAdd} className="mt-3 text-sm text-brand-600 dark:text-brand-400 underline">Adicionar agora</button>
+          <div className="text-center py-10 text-gray-400">
+            <p className="text-4xl mb-3">💸</p>
+            <p className="text-sm font-medium">Nenhum lançamento este mês.</p>
+            <button onClick={onAdd} className="mt-4 text-sm text-brand-600 font-semibold py-2 px-5 rounded-2xl bg-brand-50 border border-brand-200">
+              Adicionar agora
+            </button>
           </div>
         ) : (
           <div className="space-y-2">
