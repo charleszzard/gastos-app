@@ -24,21 +24,20 @@ const INPUT_STYLE = {
 export default function Transactions({ month, year, onEdit }) {
   const { data } = useApp()
   const [search, setSearch]       = useState('')
-  const [filter, setFilter]       = useState('all')
   const [catFilter, setCatFilter] = useState('all')
 
   const filtered = useMemo(() => {
     return data.expenses.filter(e => {
       const d = new Date(e.date + 'T00:00:00')
       if (d.getMonth() !== month || d.getFullYear() !== year) return false
-      if (filter !== 'all' && e.type !== filter) return false
+      if (e.type !== 'expense') return false          // só despesas
       if (catFilter !== 'all' && e.category !== catFilter) return false
       if (search && !e.desc.toLowerCase().includes(search.toLowerCase())) return false
       return true
     })
-  }, [data.expenses, month, year, search, filter, catFilter])
+  }, [data.expenses, month, year, search, catFilter])
 
-  const total = filtered.reduce((s, e) => e.type === 'expense' ? s - e.amount : s + e.amount, 0)
+  const total = filtered.reduce((s, e) => s + e.amount, 0)
 
   return (
     <div className="px-4 py-4 space-y-4 slide-up">
@@ -48,32 +47,30 @@ export default function Transactions({ month, year, onEdit }) {
         <input
           value={search}
           onChange={e => setSearch(e.target.value)}
-          placeholder="Buscar lançamento..."
+          placeholder="Buscar gasto..."
           style={{ ...INPUT_STYLE, paddingLeft: '2.5rem' }}
         />
+        {search && (
+          <button
+            onClick={() => setSearch('')}
+            className="absolute right-3 top-1/2 -translate-y-1/2 w-6 h-6 flex items-center justify-center rounded-full text-xs"
+            style={{ background: 'rgba(98,114,164,0.3)', color: D.comment }}
+          >✕</button>
+        )}
       </div>
 
-      {/* Type filters */}
+      {/* Category filters */}
       <div className="flex gap-2 overflow-x-auto scrollbar-hide">
-        {[
-          { v: 'all',     l: 'Todos' },
-          { v: 'expense', l: '↓ Gastos' },
-          { v: 'income',  l: '↑ Receitas' },
-        ].map(({ v, l }) => (
-          <button
-            key={v}
-            onClick={() => setFilter(v)}
-            className="flex-shrink-0 text-xs px-3 py-1.5 rounded-full font-semibold transition-all"
-            style={{
-              background: filter === v ? D.purple : 'rgba(68,71,90,0.5)',
-              color: filter === v ? D.bg : D.comment,
-              border: filter === v ? `1px solid ${D.purple}` : '1px solid rgba(98,114,164,0.25)',
-              boxShadow: filter === v ? `0 0 10px rgba(189,147,249,0.3)` : 'none',
-            }}
-          >{l}</button>
-        ))}
-
-        <div className="w-px flex-shrink-0" style={{ background: 'rgba(98,114,164,0.2)' }} />
+        <button
+          onClick={() => setCatFilter('all')}
+          className="flex-shrink-0 text-xs px-3 py-1.5 rounded-full font-semibold transition-all"
+          style={{
+            background: catFilter === 'all' ? D.purple : 'rgba(68,71,90,0.5)',
+            color: catFilter === 'all' ? D.bg : D.comment,
+            border: catFilter === 'all' ? `1px solid ${D.purple}` : '1px solid rgba(98,114,164,0.25)',
+            boxShadow: catFilter === 'all' ? `0 0 10px rgba(189,147,249,0.3)` : 'none',
+          }}
+        >Todos</button>
 
         {CATEGORIES.map(c => (
           <button
@@ -94,15 +91,12 @@ export default function Transactions({ month, year, onEdit }) {
       {/* Summary + export */}
       <div className="flex items-center justify-between">
         <div>
-          <span className="text-xs" style={{ color: D.comment }}>{filtered.length} lançamentos · </span>
+          <span className="text-xs" style={{ color: D.comment }}>{filtered.length} gasto{filtered.length !== 1 ? 's' : ''} · </span>
           <span
             className="text-xs font-semibold"
-            style={{
-              color: total >= 0 ? D.green : D.red,
-              fontFamily: "'JetBrains Mono', monospace",
-            }}
+            style={{ color: D.red, fontFamily: "'JetBrains Mono', monospace" }}
           >
-            {total >= 0 ? '+' : ''}{total.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
+            −{total.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
           </span>
         </div>
         <button
@@ -114,15 +108,17 @@ export default function Transactions({ month, year, onEdit }) {
             border: '1px solid rgba(98,114,164,0.25)',
           }}
         >
-          📥 Exportar CSV
+          📥 CSV
         </button>
       </div>
 
       {/* List */}
       {filtered.length === 0 ? (
         <div className="text-center py-14">
-          <p className="text-4xl mb-3">📝</p>
-          <p className="text-sm" style={{ color: D.comment }}>Nenhum lançamento encontrado.</p>
+          <p className="text-4xl mb-3">🎉</p>
+          <p className="text-sm" style={{ color: D.comment }}>
+            {catFilter !== 'all' ? 'Nenhum gasto nessa categoria.' : 'Nenhum gasto registrado este mês.'}
+          </p>
         </div>
       ) : (
         <div className="space-y-2">

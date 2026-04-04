@@ -5,6 +5,7 @@ import Transactions from './components/Transactions'
 import Categories   from './components/Categories'
 import Charts       from './components/Charts'
 import Bills        from './components/Bills'
+import Receitas     from './components/Receitas'
 import ExpenseModal from './components/ExpenseModal'
 import Header       from './components/Header'
 import { getBillStatus } from './components/BillItem'
@@ -65,9 +66,10 @@ function Inner() {
     (data.bills || []).filter(b => !b.paid && getBillStatus(b).urgency >= 2).length
   , [data.bills])
 
-  const openAdd    = ()  => { setEditData(null); setModal(true) }
-  const openEdit   = (e) => { setEditData(e);    setModal(true) }
-  const closeModal = ()  => { setModal(false); setEditData(null) }
+  const openAdd        = ()  => { setEditData(null); setModal(true) }
+  const openAddIncome  = ()  => { setEditData({ type: 'income' }); setModal(true) }
+  const openEdit       = (e) => { setEditData(e); setModal(true) }
+  const closeModal     = ()  => { setModal(false); setEditData(null) }
 
   const prevMonth = () => {
     if (month === 0) { setMonth(11); setYear(y => y - 1) }
@@ -88,6 +90,7 @@ function Inner() {
       <main className="flex-1 pb-24 overflow-y-auto scrollbar-hide">
         {tab === 'dashboard'    && <Dashboard    month={month} year={year} onEdit={openEdit} onAdd={openAdd} goToTransactions={() => setTab('transactions')} goToBills={() => setTab('bills')} />}
         {tab === 'transactions' && <Transactions month={month} year={year} onEdit={openEdit} />}
+        {tab === 'receitas'     && <Receitas     month={month} year={year} onEdit={openEdit} onAdd={openAddIncome} />}
         {tab === 'bills'        && <Bills />}
         {tab === 'categories'   && <Categories   month={month} year={year} />}
         {tab === 'charts'       && <Charts       month={month} year={year} />}
@@ -104,8 +107,8 @@ function Inner() {
         }}
       >
         <div className="flex items-center justify-around px-1">
-          <NavIcon label="Início"    icon="🏠" active={tab==='dashboard'}    onClick={() => setTab('dashboard')} />
-          <NavIcon label="Gastos"    icon="📋" active={tab==='transactions'} onClick={() => setTab('transactions')} />
+          <NavIcon label="Início"   icon="🏠" active={tab==='dashboard'}    onClick={() => setTab('dashboard')} />
+          <NavIcon label="Gastos"   icon="📋" active={tab==='transactions'} onClick={() => setTab('transactions')} />
 
           {/* FAB */}
           <div className="flex-1 flex justify-center">
@@ -120,8 +123,8 @@ function Inner() {
             >＋</button>
           </div>
 
-          <NavIcon label="Contas"  icon="🔔" active={tab==='bills'}      onClick={() => setTab('bills')} badge={billBadge} />
-          <NavIcon label="Gráficos" icon="📈" active={tab==='charts'}     onClick={() => setTab('charts')} />
+          <NavIcon label="Receitas" icon="💰" active={tab==='receitas'} onClick={() => setTab('receitas')} />
+          <NavIcon label="Contas"   icon="🔔" active={tab==='bills'}    onClick={() => setTab('bills')} badge={billBadge} />
         </div>
       </nav>
 
