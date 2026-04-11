@@ -2,7 +2,6 @@ import React, { useState, useMemo } from 'react'
 import { AppProvider, useApp } from './context/AppContext'
 import Dashboard    from './components/Dashboard'
 import Transactions from './components/Transactions'
-import Categories   from './components/Categories'
 import Charts       from './components/Charts'
 import Bills        from './components/Bills'
 import Receitas     from './components/Receitas'
@@ -18,7 +17,8 @@ const D = {
   green: '#50fa7b', red: '#ff5555', orange: '#ffb86c', yellow: '#f1fa8c',
 }
 
-function NavIcon({ label, icon, active, onClick, badge }) {
+function NavIcon({ label, icon, active, onClick, badge, activeColor }) {
+  const color = activeColor || D.purple
   return (
     <button
       onClick={onClick}
@@ -40,14 +40,14 @@ function NavIcon({ label, icon, active, onClick, badge }) {
       </span>
       <span
         className="text-[10px] font-semibold transition-all"
-        style={{ color: active ? D.purple : D.comment }}
+        style={{ color: active ? color : D.comment }}
       >
         {label}
       </span>
       {active && (
         <span
           className="absolute bottom-0 left-1/2 -translate-x-1/2 w-6 h-0.5 rounded-full"
-          style={{ background: D.purple, boxShadow: `0 0 8px ${D.purple}` }}
+          style={{ background: color, boxShadow: `0 0 8px ${color}` }}
         />
       )}
     </button>
@@ -92,11 +92,10 @@ function Inner() {
         {tab === 'transactions' && <Transactions month={month} year={year} onEdit={openEdit} />}
         {tab === 'receitas'     && <Receitas     month={month} year={year} onEdit={openEdit} onAdd={openAddIncome} />}
         {tab === 'bills'        && <Bills />}
-        {tab === 'categories'   && <Categories   month={month} year={year} />}
         {tab === 'charts'       && <Charts       month={month} year={year} />}
       </main>
 
-      {/* Bottom nav */}
+      {/* Bottom nav — linha única */}
       <nav
         className="fixed bottom-0 left-1/2 -translate-x-1/2 w-full max-w-md safe-bottom z-40"
         style={{
@@ -108,7 +107,7 @@ function Inner() {
       >
         <div className="flex items-center justify-around px-1">
           <NavIcon label="Início"   icon="🏠" active={tab==='dashboard'}    onClick={() => setTab('dashboard')} />
-          <NavIcon label="Gastos"   icon="📋" active={tab==='transactions'} onClick={() => setTab('transactions')} />
+          <NavIcon label="Gastos"   icon="🧾" active={tab==='transactions'} onClick={() => setTab('transactions')} activeColor={D.red} />
 
           {/* FAB */}
           <div className="flex-1 flex justify-center">
@@ -123,7 +122,7 @@ function Inner() {
             >＋</button>
           </div>
 
-          <NavIcon label="Receitas" icon="💰" active={tab==='receitas'} onClick={() => setTab('receitas')} />
+          <NavIcon label="Receitas" icon="💰" active={tab==='receitas'} onClick={() => setTab('receitas')} activeColor={D.green} />
           <NavIcon label="Contas"   icon="🔔" active={tab==='bills'}    onClick={() => setTab('bills')} badge={billBadge} />
         </div>
       </nav>

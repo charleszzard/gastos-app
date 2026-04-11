@@ -281,38 +281,54 @@ export default function Dashboard({ month, year, onEdit, onAdd, goToTransactions
         </ResponsiveContainer>
       </div>
 
-      {/* Recent transactions */}
-      <div className="pb-2">
+      {/* Recent EXPENSES */}
+      <div className="pb-1">
         <div className="flex items-center justify-between mb-3">
-          <p className="text-sm font-semibold" style={{ color: D.fg }}>Últimos lançamentos</p>
-          {filtered.length > 4 && (
+          <p className="text-sm font-semibold flex items-center gap-1.5" style={{ color: D.fg }}>
+            <span style={{ color: D.red }}>↓</span> Últimos gastos
+          </p>
+          {filtered.filter(e => e.type === 'expense').length > 4 && (
             <button
               onClick={goToTransactions}
               className="text-xs font-medium py-1 px-3 rounded-xl transition-all"
-              style={{ background: 'rgba(189,147,249,0.15)', color: D.purple }}
+              style={{ background: 'rgba(255,85,85,0.12)', color: D.red }}
             >
               Ver todos
             </button>
           )}
         </div>
-        {filtered.length === 0 ? (
-          <div className="text-center py-12">
-            <p className="text-5xl mb-3">💸</p>
-            <p className="text-sm font-medium" style={{ color: D.comment }}>Nenhum lançamento este mês.</p>
+        {filtered.filter(e => e.type === 'expense').length === 0 ? (
+          <div className="text-center py-8">
+            <p className="text-4xl mb-2">🎉</p>
+            <p className="text-sm" style={{ color: D.comment }}>Nenhum gasto este mês.</p>
             <button
               onClick={onAdd}
-              className="mt-4 text-sm font-bold py-2.5 px-6 rounded-2xl transition-all active:scale-95"
-              style={{ background: 'rgba(189,147,249,0.15)', color: D.purple, border: `1px solid rgba(189,147,249,0.3)` }}
+              className="mt-3 text-sm font-bold py-2 px-5 rounded-2xl transition-all active:scale-95"
+              style={{ background: 'rgba(255,85,85,0.12)', color: D.red, border: `1px solid rgba(255,85,85,0.25)` }}
             >
-              Adicionar agora
+              Adicionar gasto
             </button>
           </div>
         ) : (
           <div className="space-y-2">
-            {filtered.slice(0, 5).map(e => <TransactionItem key={e.id} expense={e} onEdit={onEdit} />)}
+            {filtered.filter(e => e.type === 'expense').slice(0, 4).map(e => <TransactionItem key={e.id} expense={e} onEdit={onEdit} />)}
           </div>
         )}
       </div>
+
+      {/* Recent INCOME */}
+      {filtered.filter(e => e.type === 'income').length > 0 && (
+        <div className="pb-2">
+          <div className="flex items-center justify-between mb-3">
+            <p className="text-sm font-semibold flex items-center gap-1.5" style={{ color: D.fg }}>
+              <span style={{ color: D.green }}>↑</span> Últimas receitas
+            </p>
+          </div>
+          <div className="space-y-2">
+            {filtered.filter(e => e.type === 'income').slice(0, 3).map(e => <TransactionItem key={e.id} expense={e} onEdit={onEdit} />)}
+          </div>
+        </div>
+      )}
     </div>
   )
 }
