@@ -13,8 +13,9 @@ function fmt(n) {
 }
 
 export default function TransactionItem({ expense: e, onEdit }) {
-  const { deleteExpense } = useApp()
-  const cat = getCat(e.category)
+  const { deleteExpense, data } = useApp()
+  const customCategories = data.customCategories || []
+  const cat = getCat(e.category, e.type, customCategories)
   const isIncome = e.type === 'income'
   const [expanded, setExpanded] = useState(false)
 

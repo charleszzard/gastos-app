@@ -43,6 +43,12 @@ function reducer(state, action) {
     case 'SET_SAVINGS_GOAL':
       return { ...state, savingsGoal: action.amount }
 
+    // Custom Categories
+    case 'ADD_CUSTOM_CATEGORY':
+      return { ...state, customCategories: [...(state.customCategories || []), action.payload] }
+    case 'DELETE_CUSTOM_CATEGORY':
+      return { ...state, customCategories: (state.customCategories || []).filter(c => c.id !== action.id) }
+
     default:
       return state
   }
@@ -77,12 +83,19 @@ export function AppProvider({ children }) {
   const unmarkPaid = (id) => dispatch({ type: 'UNMARK_PAID', id })
   const setSavingsGoal = (amount) => dispatch({ type: 'SET_SAVINGS_GOAL', amount })
 
+  const addCustomCategory = (cat) => dispatch({
+    type: 'ADD_CUSTOM_CATEGORY',
+    payload: { ...cat, id: `custom_${Date.now()}` }
+  })
+  const deleteCustomCategory = (id) => dispatch({ type: 'DELETE_CUSTOM_CATEGORY', id })
+
   return (
     <AppContext.Provider value={{
       data,
       addExpense, updateExpense, deleteExpense, setBudget,
       addBill, updateBill, deleteBill, payBill, unmarkPaid,
       setSavingsGoal,
+      addCustomCategory, deleteCustomCategory,
       darkMode, setDarkMode
     }}>
       {children}

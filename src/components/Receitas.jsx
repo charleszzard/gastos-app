@@ -1,6 +1,6 @@
 import React, { useMemo, useState } from 'react'
 import { useApp } from '../context/AppContext'
-import { CATEGORIES, MONTHS } from '../constants'
+import { CATEGORIES, INCOME_CATEGORIES, MONTHS, getCat } from '../constants'
 import TransactionItem from './TransactionItem'
 import { exportCSV } from '../db'
 
@@ -88,16 +88,17 @@ export default function Receitas({ month, year, onEdit, onAdd }) {
   const byCategory = useMemo(() => {
     const map = {}
     allIncome.forEach(e => {
-      const key = e.category || 'other'
+      const key = e.category || 'income_other'
       map[key] = (map[key] || 0) + e.amount
     })
+    const customCategories = data.customCategories || []
     return Object.entries(map)
       .map(([catId, total]) => {
-        const cat = CATEGORIES.find(c => c.id === catId)
+        const cat = getCat(catId, 'income', customCategories)
         return { catId, total, name: cat?.name || 'Outros', icon: cat?.icon || '💰', color: cat?.color || D.green }
       })
       .sort((a, b) => b.total - a.total)
-  }, [allIncome])
+  }, [allIncome, data.customCategories])
 
   const groups = useMemo(() => groupByDate(allIncome), [allIncome])
 

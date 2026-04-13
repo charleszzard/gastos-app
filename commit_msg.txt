@@ -1,8 +1,0 @@
-feat: separar gastos e receitas em abas distintas
-
-- Aba Gastos mostra apenas despesas (hero card vermelho)
-- Aba Receitas mostra apenas receitas (hero card verde)
-- Transactions.jsx melhorado com agrupamento por data e stats
-- Dashboard: secao de lancamentos dividida em gastos e receitas separados
-- Nav restaurada para linha unica: Inicio, Gastos, +FAB, Receitas, Contas
-- Adiciona Lancamentos.jsx (extrato completo)

@@ -1,6 +1,6 @@
 const KEY = 'gastos_v2'
 
-const defaults = () => ({ expenses: [], budgets: {}, bills: [], savingsGoal: 0 })
+const defaults = () => ({ expenses: [], budgets: {}, bills: [], savingsGoal: 0, customCategories: [] })
 
 export function load() {
   try {
