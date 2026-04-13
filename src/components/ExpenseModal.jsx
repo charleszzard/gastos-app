@@ -165,11 +165,20 @@ export default function ExpenseModal({ initial, onClose }) {
   const { addExpense, updateExpense, addCustomCategory, data } = useApp()
   const customCategories = data.customCategories || []
 
-  const [form, setForm] = useState(
-    initial
-      ? { ...DEFAULT_FORM, ...initial, amount: String(initial.amount) }
-      : DEFAULT_FORM
-  )
+  const buildInitialForm = (initial) => {
+    if (!initial) return DEFAULT_FORM
+    const base = {
+      ...DEFAULT_FORM,
+      ...initial,
+      // Only convert amount if it actually exists and is a real number
+      amount: initial.amount != null ? String(initial.amount) : '',
+      // Set correct default category based on type if no category given
+      category: initial.category || (initial.type === 'income' ? 'salary' : 'food'),
+    }
+    return base
+  }
+
+  const [form, setForm] = useState(() => buildInitialForm(initial))
   const [error, setError]     = useState('')
   const [showNote, setShowNote] = useState(!!(initial?.note))
   const [focused, setFocused]   = useState(null)
@@ -186,12 +195,15 @@ export default function ExpenseModal({ initial, onClose }) {
     setForm(f => ({ ...f, type: t, category: defaultCat }))
   }
 
+  const isEditing = !!(initial?.id)
+
   const submit = () => {
-    const amt = parseFloat(form.amount.replace(',', '.'))
+    const rawAmount = String(form.amount ?? '').replace(',', '.')
+    const amt = parseFloat(rawAmount)
     if (!form.desc.trim()) { setError('Informe uma descrição'); return }
     if (isNaN(amt) || amt <= 0) { setError('Informe um valor válido'); return }
     const payload = { ...form, amount: amt, note: form.note?.trim() || '' }
-    if (initial) updateExpense({ ...initial, ...payload })
+    if (isEditing) updateExpense({ ...initial, ...payload })
     else addExpense(payload)
     onClose()
   }
@@ -229,7 +241,7 @@ export default function ExpenseModal({ initial, onClose }) {
           <div className="w-10 h-1 rounded-full mx-auto mb-5" style={{ background: `linear-gradient(90deg, ${D.purple}, ${D.pink})` }} />
 
           <h2 className="text-lg font-bold mb-5" style={{ color: D.fg }}>
-            {initial ? '✏️ Editar lançamento' : '＋ Novo lançamento'}
+            {isEditing ? '✏️ Editar lançamento' : '＋ Novo lançamento'}
           </h2>
 
           {/* Type toggle */}
@@ -410,7 +422,7 @@ export default function ExpenseModal({ initial, onClose }) {
               boxShadow: `0 4px 20px rgba(189,147,249,0.4)`,
             }}
           >
-            {initial ? 'Salvar alterações' : 'Adicionar lançamento'}
+            {isEditing ? 'Salvar alterações' : 'Adicionar lançamento'}
           </button>
           <button
             onClick={onClose}
