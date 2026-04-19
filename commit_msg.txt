@@ -1,0 +1,20 @@
+feat(bills): add installments and month-based filtering
+
+- BillModal: new fields for due month, due year and number of installments
+  - Installment count field (default 1 = single payment)
+  - When installments > 1, shows current installment field and remaining count
+  - Recurring toggle hidden when installments > 1 (mutually exclusive)
+  - Month/year selectors for the first due date
+
+- BillItem: display installment badge (e.g. 1/6) and remaining installments
+  - Status now accepts refMonth/refYear to compute urgency relative to selected month
+  - Shows due month abbreviation in the date info
+
+- Bills: filter bills by the selected month/year from the header
+  - Recurring bills appear every month
+  - Installment bills appear from start month for N months
+  - Single-payment bills appear only in their exact month/year
+  - Header shows which month is being viewed
+  - Installment number auto-computed per month
+
+- App: passes month and year props to Bills component

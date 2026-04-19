@@ -91,7 +91,7 @@ function Inner() {
         {tab === 'dashboard'    && <Dashboard    month={month} year={year} onEdit={openEdit} onAdd={openAdd} goToTransactions={() => setTab('transactions')} goToBills={() => setTab('bills')} />}
         {tab === 'transactions' && <Transactions month={month} year={year} onEdit={openEdit} />}
         {tab === 'receitas'     && <Receitas     month={month} year={year} onEdit={openEdit} onAdd={openAddIncome} />}
-        {tab === 'bills'        && <Bills />}
+        {tab === 'bills'        && <Bills        month={month} year={year} />}
         {tab === 'charts'       && <Charts       month={month} year={year} />}
       </main>
 

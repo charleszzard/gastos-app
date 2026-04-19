@@ -1,5 +1,5 @@
 import React from 'react'
-import { getCat } from '../constants'
+import { getCat, MONTHS } from '../constants'
 
 const D = {
   bg: '#282a36', surface2: '#373948', comment: '#6272a4', fg: '#f8f8f2',
@@ -10,33 +10,45 @@ function fmt(n) {
   return n.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })
 }
 
-// Returns { label, color, urgency } based on due day and paid status
-export function getBillStatus(bill) {
+// Returns { label, color, urgency } based on due date relative to the selected month/year
+export function getBillStatus(bill, refMonth, refYear) {
   if (bill.paid) {
     return { label: '✅ Paga', color: D.green, bg: 'rgba(80,250,123,0.12)', urgency: 0 }
   }
-  const today = new Date()
-  const currentDay   = today.getDate()
-  const currentMonth = today.getMonth()
-  const currentYear  = today.getFullYear()
 
-  let dueDate = new Date(currentYear, currentMonth, bill.dueDay)
-  if (dueDate < today && bill.recurring) {
-    dueDate = new Date(currentYear, currentMonth + 1, bill.dueDay)
+  const today = new Date()
+  const curMonth = refMonth ?? today.getMonth()
+  const curYear  = refYear  ?? today.getFullYear()
+
+  const dueDate  = new Date(curYear, curMonth, bill.dueDay)
+  const todayDay = new Date(today.getFullYear(), today.getMonth(), today.getDate())
+
+  // Only compute urgency relative to today if the ref month == current real month
+  const isCurrentMonth = curMonth === today.getMonth() && curYear === today.getFullYear()
+
+  if (isCurrentMonth) {
+    const diffDays = Math.round((dueDate - todayDay) / 86400000)
+    if (diffDays < 0)   return { label: `⚠️ Vencida há ${Math.abs(diffDays)}d`,  color: D.red,     bg: 'rgba(255,85,85,0.12)',   urgency: 3 }
+    if (diffDays === 0) return { label: '🔴 Vence hoje!',                          color: D.red,     bg: 'rgba(255,85,85,0.12)',   urgency: 3 }
+    if (diffDays <= 3)  return { label: `🟠 Vence em ${diffDays}d`,               color: D.orange,  bg: 'rgba(255,184,108,0.12)', urgency: 2 }
+    if (diffDays <= 7)  return { label: `🟡 Vence em ${diffDays}d`,               color: '#f1fa8c', bg: 'rgba(241,250,140,0.1)',  urgency: 1 }
+  } else if (new Date(curYear, curMonth) < new Date(today.getFullYear(), today.getMonth())) {
+    // Past month
+    return { label: `⚠️ Mês passado`,  color: D.red, bg: 'rgba(255,85,85,0.12)', urgency: 2 }
+  } else {
+    // Future month
+    return { label: `📅 Dia ${bill.dueDay}`, color: D.comment, bg: 'rgba(98,114,164,0.12)', urgency: 0 }
   }
 
-  const diffDays = Math.round((dueDate - new Date(currentYear, currentMonth, currentDay)) / 86400000)
-
-  if (diffDays < 0)  return { label: `⚠️ Vencida há ${Math.abs(diffDays)}d`,          color: D.red,    bg: 'rgba(255,85,85,0.12)',   urgency: 3 }
-  if (diffDays === 0) return { label: '🔴 Vence hoje!',                                 color: D.red,    bg: 'rgba(255,85,85,0.12)',   urgency: 3 }
-  if (diffDays <= 3)  return { label: `🟠 Vence em ${diffDays}d`,                       color: D.orange, bg: 'rgba(255,184,108,0.12)', urgency: 2 }
-  if (diffDays <= 7)  return { label: `🟡 Vence em ${diffDays}d`,                       color: '#f1fa8c', bg: 'rgba(241,250,140,0.1)',  urgency: 1 }
-  return               { label: `📅 Dia ${bill.dueDay}`,                                color: D.comment, bg: 'rgba(98,114,164,0.12)',  urgency: 0 }
+  return { label: `📅 Dia ${bill.dueDay}`, color: D.comment, bg: 'rgba(98,114,164,0.12)', urgency: 0 }
 }
 
-export default function BillItem({ bill, onEdit, onPay, onUnpay, onDelete }) {
+export default function BillItem({ bill, onEdit, onPay, onUnpay, onDelete, refMonth, refYear }) {
   const cat    = getCat(bill.category)
-  const status = getBillStatus(bill)
+  const status = getBillStatus(bill, refMonth, refYear)
+
+  const isParcelado = (bill.installments || 1) > 1
+  const remaining   = isParcelado ? (bill.installments - bill.currentInstallment + 1) : null
 
   return (
     <div
@@ -59,16 +71,28 @@ export default function BillItem({ bill, onEdit, onPay, onUnpay, onDelete }) {
 
         {/* Info */}
         <div className="flex-1 min-w-0">
-          <p className="text-sm font-semibold truncate" style={{ color: D.fg }}>{bill.name}</p>
-          <div className="flex items-center gap-2 mt-0.5">
+          <p className="text-sm font-semibold truncate" style={{ color: D.fg }}>
+            {bill.name}
+            {isParcelado && (
+              <span className="ml-1.5 text-[10px] font-bold px-1.5 py-0.5 rounded-full" style={{ background: 'rgba(189,147,249,0.15)', color: D.purple }}>
+                {bill.currentInstallment}/{bill.installments}
+              </span>
+            )}
+          </p>
+          <div className="flex items-center gap-2 mt-0.5 flex-wrap">
             <span
               className="text-[11px] font-semibold px-2 py-0.5 rounded-full"
               style={{ color: status.color, background: status.bg }}
             >
               {status.label}
             </span>
-            {bill.recurring && !bill.paid && (
+            {bill.recurring && !bill.paid && !isParcelado && (
               <span className="text-[10px] font-medium" style={{ color: D.purple }}>🔁 Mensal</span>
+            )}
+            {isParcelado && remaining !== null && !bill.paid && (
+              <span className="text-[10px] font-medium" style={{ color: '#8be9fd' }}>
+                💳 {remaining} parcela{remaining !== 1 ? 's' : ''} restante{remaining !== 1 ? 's' : ''}
+              </span>
             )}
           </div>
         </div>
@@ -81,7 +105,12 @@ export default function BillItem({ bill, onEdit, onPay, onUnpay, onDelete }) {
           >
             {fmt(bill.amount)}
           </p>
-          <p className="text-[10px]" style={{ color: D.comment }}>dia {bill.dueDay}</p>
+          <p className="text-[10px]" style={{ color: D.comment }}>
+            dia {bill.dueDay}
+            {bill.dueMonth !== undefined && (
+              <span> · {MONTHS[bill.dueMonth]?.slice(0, 3)}</span>
+            )}
+          </p>
         </div>
       </div>
 

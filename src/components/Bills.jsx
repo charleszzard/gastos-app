@@ -2,6 +2,7 @@ import React, { useState, useMemo } from 'react'
 import { useApp } from '../context/AppContext'
 import BillItem, { getBillStatus } from './BillItem'
 import BillModal from './BillModal'
+import { MONTHS } from '../constants'
 
 const D = {
   bg: '#282a36', surface: '#44475a', surface2: '#373948',
@@ -14,7 +15,55 @@ function fmt(n) {
   return n.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })
 }
 
-export default function Bills() {
+/**
+ * Determines if a bill should appear in a given month/year.
+ *
+ * Rules:
+ * - If the bill has a specific dueMonth/dueYear (non-recurring, parcelado),
+ *   show it in that month and all months until all installments are done.
+ * - If recurring (no installments), show every month.
+ * - A bill with installments: show from dueMonth/dueYear for `installments` months.
+ */
+function billAppearsInMonth(bill, month, year) {
+  const isParcelado  = (bill.installments || 1) > 1
+  const hasDueMonth  = bill.dueMonth !== undefined && bill.dueMonth !== null
+
+  // Recurring bills appear every month
+  if (bill.recurring && !isParcelado) return true
+
+  if (!hasDueMonth) {
+    // Legacy bills without dueMonth: always show
+    return true
+  }
+
+  // Start date of the bill (first installment or single payment)
+  const startYear  = bill.dueYear  ?? new Date().getFullYear()
+  const startMonth = bill.dueMonth
+
+  if (isParcelado) {
+    // Parcelado: show from start month for `installments` months
+    const totalMonths   = bill.installments || 1
+    const startAbsolute = startYear * 12 + startMonth
+    const refAbsolute   = year * 12 + month
+    const endAbsolute   = startAbsolute + totalMonths - 1
+    return refAbsolute >= startAbsolute && refAbsolute <= endAbsolute
+  }
+
+  // Single payment: only show in exact dueMonth/dueYear
+  return month === startMonth && year === startYear
+}
+
+/**
+ * For parcelado bills, figure out which installment number corresponds to the given month.
+ */
+function getInstallmentForMonth(bill, month, year) {
+  if ((bill.installments || 1) <= 1) return null
+  const startAbsolute = (bill.dueYear ?? new Date().getFullYear()) * 12 + (bill.dueMonth ?? 0)
+  const refAbsolute   = year * 12 + month
+  return refAbsolute - startAbsolute + 1
+}
+
+export default function Bills({ month, year }) {
   const { data, addBill, updateBill, deleteBill, payBill, unmarkPaid } = useApp()
   const [modal, setModal]       = useState(false)
   const [editData, setEditData] = useState(null)
@@ -23,8 +72,13 @@ export default function Bills() {
 
   const bills = data.bills || []
 
+  // Filter bills that belong to the selected month
+  const monthBills = useMemo(() =>
+    bills.filter(b => billAppearsInMonth(b, month, year))
+  , [bills, month, year])
+
   const sorted = useMemo(() => {
-    return [...bills]
+    return [...monthBills]
       .filter(b => {
         if (filter === 'pending') return !b.paid
         if (filter === 'paid') return b.paid
@@ -32,14 +86,14 @@ export default function Bills() {
       })
       .sort((a, b) => {
         if (a.paid !== b.paid) return a.paid ? 1 : -1
-        return getBillStatus(b).urgency - getBillStatus(a).urgency || a.dueDay - b.dueDay
+        return getBillStatus(b, month, year).urgency - getBillStatus(a, month, year).urgency || a.dueDay - b.dueDay
       })
-  }, [bills, filter])
+  }, [monthBills, filter, month, year])
 
-  const totalPending  = bills.filter(b => !b.paid).reduce((s, b) => s + b.amount, 0)
-  const totalPaid     = bills.filter(b => b.paid).reduce((s, b) => s + b.amount, 0)
-  const pendingCount  = bills.filter(b => !b.paid).length
-  const urgentCount   = bills.filter(b => !b.paid && getBillStatus(b).urgency >= 2).length
+  const totalPending = monthBills.filter(b => !b.paid).reduce((s, b) => s + b.amount, 0)
+  const totalPaid    = monthBills.filter(b =>  b.paid).reduce((s, b) => s + b.amount, 0)
+  const pendingCount = monthBills.filter(b => !b.paid).length
+  const urgentCount  = monthBills.filter(b => !b.paid && getBillStatus(b, month, year).urgency >= 2).length
 
   const openAdd  = () => { setEditData(null); setModal(true) }
   const openEdit = (b) => { setEditData(b); setModal(true) }
@@ -62,8 +116,15 @@ export default function Bills() {
     setConfirmPay(null)
   }
 
+  const monthLabel = `${MONTHS[month]} ${year}`
+
   return (
     <div className="px-4 py-4 space-y-4 slide-up">
+      {/* Month label */}
+      <p className="text-xs font-semibold text-center" style={{ color: D.comment }}>
+        📅 Contas de <span style={{ color: D.purple }}>{monthLabel}</span>
+      </p>
+
       {/* Header cards */}
       <div className="grid grid-cols-2 gap-3">
         {/* Pending */}
@@ -107,7 +168,7 @@ export default function Bills() {
             {fmt(totalPaid)}
           </p>
           <p className="text-[11px] mt-0.5" style={{ color: D.comment }}>
-            {bills.filter(b => b.paid).length} conta{bills.filter(b => b.paid).length !== 1 ? 's' : ''}
+            {monthBills.filter(b => b.paid).length} conta{monthBills.filter(b => b.paid).length !== 1 ? 's' : ''}
           </p>
         </div>
       </div>
@@ -151,7 +212,7 @@ export default function Bills() {
           <p className="text-sm font-medium" style={{ color: D.comment }}>
             {filter === 'paid' ? 'Nenhuma conta paga ainda.' :
              filter === 'pending' ? 'Nenhuma conta pendente! 🎉' :
-             'Nenhuma conta cadastrada.'}
+             `Nenhuma conta para ${monthLabel}.`}
           </p>
           {filter === 'all' && (
             <button
@@ -165,16 +226,25 @@ export default function Bills() {
         </div>
       ) : (
         <div className="space-y-3">
-          {sorted.map(b => (
-            <BillItem
-              key={b.id}
-              bill={b}
-              onEdit={openEdit}
-              onPay={setConfirmPay}
-              onUnpay={() => unmarkPaid(b.id)}
-              onDelete={() => deleteBill(b.id)}
-            />
-          ))}
+          {sorted.map(b => {
+            const instNum = getInstallmentForMonth(b, month, year)
+            // Create a view-bill with the installment number overridden for display
+            const displayBill = instNum !== null
+              ? { ...b, currentInstallment: instNum }
+              : b
+            return (
+              <BillItem
+                key={b.id}
+                bill={displayBill}
+                onEdit={() => openEdit(b)}
+                onPay={setConfirmPay}
+                onUnpay={() => unmarkPaid(b.id)}
+                onDelete={() => deleteBill(b.id)}
+                refMonth={month}
+                refYear={year}
+              />
+            )
+          })}
         </div>
       )}
 
